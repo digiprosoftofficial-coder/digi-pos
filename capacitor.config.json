@@ -1,0 +1,16 @@
+{
+    "appId": "com.digiprosoft.pos",
+    "appName": "digipro POS",
+    "webDir": "capacitor-www",
+    "server": {
+        "androidScheme": "https",
+        "cleartext": true
+    },
+    "plugins": {
+        "SplashScreen": {
+            "launchShowDuration": 2000,
+            "backgroundColor": "#1b5cf5",
+            "showSpinner": false
+        }
+    }
+}

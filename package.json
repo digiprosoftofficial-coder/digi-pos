@@ -1,0 +1,41 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "build:mobile": "vite build --config vite.capacitor.config.js && node scripts/prepare-capacitor-www.mjs",
+        "mobile:sync": "npm run build:mobile && npx cap sync",
+        "mobile:android": "npm run mobile:sync && npx cap open android",
+        "mobile:ios": "npm run mobile:sync && npx cap open ios"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "^7.4.2",
+        "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-vue": "^6.0.10",
+        "concurrently": "^10.0.3",
+        "laravel-vite-plugin": "^3.1",
+        "tailwindcss": "^4.0.0",
+        "vite": "^8.0.0"
+    },
+    "optionalDependencies": {
+        "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "@capacitor/android": "^7.4.2",
+        "@capacitor/app": "^7.0.2",
+        "@capacitor/core": "^7.4.2",
+        "@capacitor/ios": "^7.4.2",
+        "@capacitor/keyboard": "^7.0.2",
+        "@capacitor/splash-screen": "^7.0.2",
+        "@capacitor/status-bar": "^7.0.2",
+        "axios": "^1.20.0",
+        "dexie": "^4.4.6",
+        "html5-qrcode": "^2.3.8",
+        "pinia": "^3.0.4",
+        "vue": "^3.5.44",
+        "vue-i18n": "^11.4.16",
+        "vue-router": "^4.6.4"
+    }
+}
