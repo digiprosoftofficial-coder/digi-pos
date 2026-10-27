@@ -2,8 +2,8 @@
 
 namespace App\Models\Concerns;
 
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
-use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Shared activity-logging behaviour for auditable models.
@@ -19,7 +19,7 @@ trait TracksActivity
             ->logUnguarded()
             ->logExcept(['password', 'remember_token', 'updated_at', 'created_at'])
             ->logOnlyDirty()
-            ->dontLogEmptyChanges()
+            ->dontSubmitEmptyLogs()
             ->useLogName(strtolower(class_basename($this)));
     }
 }
