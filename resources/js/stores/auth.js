@@ -17,6 +17,7 @@ export const useAuthStore = defineStore('auth', {
         permissions: (state) => state.user?.permissions || [],
         capabilities: (state) => state.user?.capabilities || [],
         currency: (state) => state.user?.store?.currency_symbol || '৳',
+        isStoreExpired: (state) => state.user?.store?.status === 'expired',
     },
     actions: {
         can(permission) {

@@ -80,6 +80,9 @@ router.beforeEach(async (to) => {
     if (to.meta.auth && !to.meta.superAdmin && auth.isSuperAdmin) {
         return { name: 'admin.dashboard' };
     }
+    if (to.meta.auth && !to.meta.superAdmin && auth.isStoreExpired && to.name !== 'settings') {
+        return { name: 'settings' };
+    }
     return true;
 });
 

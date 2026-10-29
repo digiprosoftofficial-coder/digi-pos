@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CreateStoreRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Store;
 use App\Models\StoreCapability;
@@ -11,12 +12,12 @@ use App\Models\StoreSubscription;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\CapabilityService;
+use App\Services\StoreProvisioningService;
 use App\Services\SubscriptionAssignmentService;
 use App\Support\Capabilities;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class StoreController extends Controller
 {
@@ -25,6 +26,7 @@ class StoreController extends Controller
     public function __construct(
         protected CapabilityService $capabilities,
         protected SubscriptionAssignmentService $subscriptionAssignment,
+        protected StoreProvisioningService $provisioning,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -38,6 +40,25 @@ class StoreController extends Controller
             ->paginate($request->integer('per_page', 20));
 
         return $this->ok($stores);
+    }
+
+    public function store(CreateStoreRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        ['store' => $store, 'user' => $user] = $this->provisioning->provision($data, [
+            'start_active' => $data['start_mode'] === 'active',
+            'trial_days' => $data['trial_days'] ?? null,
+            'mark_email_verified' => true,
+            'subscription_plan_id' => $data['subscription_plan_id'] ?? null,
+        ]);
+
+        $store->load(['currentSubscription.plan'])->loadCount(['users', 'products', 'sales']);
+
+        return $this->created([
+            'store' => $store,
+            'owner' => new UserResource($user),
+        ], 'Store created.');
     }
 
     public function show(Store $store): JsonResponse

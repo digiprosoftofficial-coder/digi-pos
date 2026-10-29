@@ -22,13 +22,23 @@ class ResolveStore
                 return response()->json([
                     'success' => false,
                     'message' => 'No store is associated with this account.',
+                    'code' => 'store_missing',
                 ], 403);
             }
 
-            if ($user->store && ! $user->store->isActive()) {
+            $store = $user->store;
+
+            if ($store) {
+                $store->expireTrialIfDue();
+                $store->refresh();
+                $user->setRelation('store', $store);
+            }
+
+            if ($store?->isSuspended()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'This store is currently suspended. Please contact support.',
+                    'code' => 'store_inactive',
                 ], 403);
             }
 

@@ -61,6 +61,33 @@ class Store extends Model
 
     public function isActive(): bool
     {
-        return $this->status === 'active' || $this->status === 'trial';
+        if (in_array($this->status, ['suspended', 'expired'], true)) {
+            return false;
+        }
+
+        if ($this->status === 'trial' && $this->trial_ends_at?->isPast()) {
+            return false;
+        }
+
+        return in_array($this->status, ['active', 'trial'], true);
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === 'suspended';
+    }
+
+    public function expireTrialIfDue(): void
+    {
+        if ($this->status !== 'trial' || ! $this->trial_ends_at?->isPast()) {
+            return;
+        }
+
+        $this->update(['status' => 'expired']);
+
+        StoreSubscription::query()
+            ->where('store_id', $this->id)
+            ->whereIn('status', ['active', 'trial'])
+            ->update(['status' => 'expired']);
     }
 }

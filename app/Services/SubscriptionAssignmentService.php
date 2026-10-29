@@ -28,8 +28,11 @@ class SubscriptionAssignmentService
 
             StoreCapability::query()->where('store_id', $store->id)->delete();
 
-            if ($status === 'active' && $store->status === 'trial') {
-                $store->update(['status' => 'active']);
+            if ($status === 'active' && in_array($store->status, ['trial', 'expired'], true)) {
+                $store->update([
+                    'status' => 'active',
+                    'trial_ends_at' => null,
+                ]);
             }
 
             return $subscription;

@@ -92,6 +92,15 @@ async function exitImpersonation() {
         <div class="flex min-w-0 flex-1 flex-col">
             <!-- Impersonation banner -->
             <EmailVerificationBanner />
+            <div
+                v-if="auth.isStoreExpired"
+                class="flex flex-wrap items-center justify-between gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white"
+            >
+                <span>{{ t('admin.trial_expired_banner') }}</span>
+                <RouterLink :to="{ name: 'settings' }" class="rounded-lg bg-white/20 px-3 py-1 hover:bg-white/30">
+                    {{ t('settings.billing') }}
+                </RouterLink>
+            </div>
             <div v-if="auth.isImpersonating" class="flex items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-white">
                 <span>👁 {{ t('admin.impersonating') }} <strong>{{ auth.store?.name }}</strong></span>
                 <button class="rounded-lg bg-white/20 px-3 py-1 hover:bg-white/30" @click="exitImpersonation">↩ {{ t('admin.back_to_admin') }}</button>

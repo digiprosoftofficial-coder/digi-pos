@@ -13,6 +13,7 @@ import BarcodeScanner from '@/components/BarcodeScanner.vue';
 import PaymentModal from '@/views/pos/PaymentModal.vue';
 import ReceiptModal from '@/views/pos/ReceiptModal.vue';
 import VariantPicker from '@/views/pos/VariantPicker.vue';
+import { productDisplaySellingPrice } from '@/lib/productPricing';
 
 const { t } = useI18n();
 const cart = useCartStore();
@@ -299,7 +300,7 @@ onMounted(async () => {
                             📦
                         </div>
                         <span class="line-clamp-2 text-sm font-semibold">{{ p.name }}</span>
-                        <span class="text-brand-600 font-bold">{{ currency }}{{ p.selling_price }}</span>
+                        <span class="text-brand-600 font-bold">{{ currency }}{{ productDisplaySellingPrice(p) }}</span>
                         <span v-if="p.track_stock" class="text-xs text-slate-400">{{ t('common.stock') }}: {{ p.stock_quantity }}</span>
                     </button>
                 </div>

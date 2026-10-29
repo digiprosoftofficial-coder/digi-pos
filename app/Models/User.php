@@ -29,6 +29,7 @@ class User extends Authenticatable implements CanResetPasswordContract, MustVeri
         'password',
         'is_super_admin',
         'is_active',
+        'email_verified_at',
     ];
 
     protected $hidden = [

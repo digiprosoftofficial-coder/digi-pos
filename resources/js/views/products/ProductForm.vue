@@ -340,9 +340,38 @@ function removeVariant(i) {
     form.value.variants.splice(i, 1);
 }
 
+function assertSellablePrices() {
+    const parentSell = Number(form.value.selling_price) > 0;
+    if (form.value.type === 'simple') {
+        if (!parentSell) {
+            errors.value = { selling_price: [t('product.selling_price_required')] };
+            return false;
+        }
+
+        return true;
+    }
+
+    const variants = form.value.variants || [];
+    if (variants.length === 0) {
+        return true;
+    }
+
+    const anyVariantSell = variants.some((v) => Number(v.selling_price) > 0);
+    if (!parentSell && !anyVariantSell) {
+        errors.value = { selling_price: [t('product.selling_price_required')] };
+        return false;
+    }
+
+    return true;
+}
+
 async function save() {
     saving.value = true;
     errors.value = {};
+    if (!assertSellablePrices()) {
+        saving.value = false;
+        return;
+    }
     try {
         let productId = props.product?.id;
         let savedProduct;
@@ -485,12 +514,13 @@ async function save() {
 
             <div v-if="form.type === 'simple'" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div>
-                    <label class="label">{{ t('product.cost_price') }}</label>
-                    <input v-model.number="form.cost_price" type="number" class="input" />
+                    <label class="label">{{ t('product.selling_price') }} *</label>
+                    <input v-model.number="form.selling_price" type="number" min="0" step="0.01" class="input" />
+                    <p v-if="errors.selling_price" class="mt-1 text-xs text-red-500">{{ errors.selling_price[0] }}</p>
                 </div>
                 <div>
-                    <label class="label">{{ t('product.selling_price') }}</label>
-                    <input v-model.number="form.selling_price" type="number" class="input" />
+                    <label class="label">{{ t('product.cost_price') }}</label>
+                    <input v-model.number="form.cost_price" type="number" min="0" step="0.01" class="input" />
                 </div>
                 <div>
                     <label class="label">{{ t('common.stock') }}</label>
@@ -520,12 +550,13 @@ async function save() {
                     <p class="mb-2 text-xs text-slate-500">{{ t('product.default_prices_hint') }}</p>
                     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         <div>
-                            <label class="label">{{ t('product.cost_price') }}</label>
-                            <input v-model.number="form.cost_price" type="number" class="input" />
+                            <label class="label">{{ t('product.selling_price') }}</label>
+                            <input v-model.number="form.selling_price" type="number" min="0" step="0.01" class="input" />
+                            <p v-if="errors.selling_price" class="mt-1 text-xs text-red-500">{{ errors.selling_price[0] }}</p>
                         </div>
                         <div>
-                            <label class="label">{{ t('product.selling_price') }}</label>
-                            <input v-model.number="form.selling_price" type="number" class="input" />
+                            <label class="label">{{ t('product.cost_price') }}</label>
+                            <input v-model.number="form.cost_price" type="number" min="0" step="0.01" class="input" />
                         </div>
                         <div>
                             <label class="label">{{ t('product.alert_qty') }}</label>
@@ -542,8 +573,8 @@ async function save() {
                         <input v-model="v.name" :placeholder="t('product.variant_name')" class="input sm:col-span-2" />
                         <input v-model="v.sku" class="input" :placeholder="t('product.sku_auto')" />
                         <input v-model="v.barcode" :placeholder="t('common.barcode')" class="input" />
+                        <input v-model.number="v.selling_price" type="number" :placeholder="t('product.selling_price')" class="input" />
                         <input v-model.number="v.cost_price" type="number" :placeholder="t('product.cost_price')" class="input" />
-                        <input v-model.number="v.selling_price" type="number" :placeholder="t('common.price')" class="input" />
                         <input v-model.number="v.stock_quantity" type="number" :placeholder="t('common.stock')" class="input" />
                         <button type="button" class="btn-danger px-3" @click="removeVariant(i)">✕</button>
                     </div>

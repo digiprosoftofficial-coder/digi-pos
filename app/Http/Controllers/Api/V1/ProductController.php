@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -319,7 +320,7 @@ class ProductController extends Controller
 
     protected function validateData(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'type' => ['required', 'in:simple,variable'],
             'category_id' => ['nullable', 'exists:categories,id'],
@@ -345,5 +346,42 @@ class ProductController extends Controller
             'variants.*.stock_quantity' => ['nullable', 'numeric'],
             'variants.*.attributes' => ['nullable', 'array'],
         ]);
+
+        $this->assertSellablePrices($data);
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function assertSellablePrices(array $data): void
+    {
+        $parentSelling = (float) ($data['selling_price'] ?? 0);
+
+        if ($data['type'] === 'simple') {
+            if ($parentSelling <= 0) {
+                throw ValidationException::withMessages([
+                    'selling_price' => ['Selling price is required for POS (must be greater than zero).'],
+                ]);
+            }
+
+            return;
+        }
+
+        $variants = $data['variants'] ?? [];
+        if ($variants === []) {
+            return;
+        }
+
+        $anyVariantSelling = collect($variants)->contains(
+            fn (array $variant): bool => (float) ($variant['selling_price'] ?? 0) > 0
+        );
+
+        if ($parentSelling <= 0 && ! $anyVariantSelling) {
+            throw ValidationException::withMessages([
+                'selling_price' => ['Set a default selling price or a price on at least one variant.'],
+            ]);
+        }
     }
 }

@@ -29,6 +29,26 @@ const plans = ref([]);
 const selectedPlan = ref(null);
 const savingPlan = ref(false);
 
+const createModal = ref(false);
+const creating = ref(false);
+const defaultTrialDays = ref(7);
+const createForm = ref(blankStore());
+const createErrors = ref({});
+
+function blankStore() {
+    return {
+        store_name: '',
+        owner_name: '',
+        email: '',
+        phone: '',
+        password: '',
+        password_confirmation: '',
+        subscription_plan_id: '',
+        start_mode: 'trial',
+        trial_days: '',
+    };
+}
+
 let debounce;
 function onSearch() {
     clearTimeout(debounce);
@@ -123,12 +143,59 @@ async function impersonate(store) {
     }
 }
 
+async function openCreate() {
+    createForm.value = blankStore();
+    createErrors.value = {};
+    createModal.value = true;
+    try {
+        const [planRes, settingsRes] = await Promise.all([
+            api.get('/admin/plans'),
+            api.get('/admin/settings'),
+        ]);
+        plans.value = Array.isArray(planRes.data.data) ? planRes.data.data : [];
+        defaultTrialDays.value = settingsRes.data.data.trial_days;
+        const free = plans.value.find((p) => p.slug === 'free');
+        createForm.value.subscription_plan_id = free?.id || plans.value[0]?.id || '';
+    } catch (e) {
+        ui.error(e.response?.data?.message || 'Failed');
+    }
+}
+
+async function createStore() {
+    if (creating.value) {
+        return;
+    }
+    creating.value = true;
+    createErrors.value = {};
+    try {
+        const payload = {
+            ...createForm.value,
+            subscription_plan_id: createForm.value.subscription_plan_id || null,
+            trial_days: createForm.value.start_mode === 'trial' && createForm.value.trial_days
+                ? Number(createForm.value.trial_days)
+                : null,
+        };
+        await api.post('/admin/stores', payload);
+        ui.success(t('admin.add_store'));
+        createModal.value = false;
+        await load();
+    } catch (e) {
+        createErrors.value = e.response?.data?.errors || {};
+        ui.error(e.response?.data?.message || 'Failed');
+    } finally {
+        creating.value = false;
+    }
+}
+
 onMounted(load);
 </script>
 
 <template>
     <div>
-        <h1 class="mb-4 text-2xl font-bold">{{ t('admin.stores') }}</h1>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-2xl font-bold">{{ t('admin.stores') }}</h1>
+            <button class="btn-primary" @click="openCreate">+ {{ t('admin.add_store') }}</button>
+        </div>
         <input v-model="search" class="input mb-4" :placeholder="t('common.search')" @input="onSearch" />
 
         <Spinner v-if="loading" />
@@ -144,7 +211,7 @@ onMounted(load);
                                 :class="{
                                     'bg-emerald-100 text-emerald-700': s.status === 'active',
                                     'bg-amber-100 text-amber-700': s.status === 'trial',
-                                    'bg-red-100 text-red-700': s.status === 'suspended',
+                                    'bg-red-100 text-red-700': s.status === 'suspended' || s.status === 'expired',
                                 }"
                             >{{ s.status }}</span>
                         </div>
@@ -170,6 +237,63 @@ onMounted(load);
                 </div>
             </div>
         </div>
+
+        <BaseModal :show="createModal" :title="t('admin.add_store')" size="lg" @close="createModal = false">
+            <div class="space-y-3">
+                <div>
+                    <label class="label">{{ t('auth.store_name') }}</label>
+                    <input v-model="createForm.store_name" class="input" />
+                    <p v-if="createErrors.store_name" class="mt-1 text-xs text-red-500">{{ createErrors.store_name[0] }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">{{ t('auth.owner_name') }}</label>
+                        <input v-model="createForm.owner_name" class="input" />
+                    </div>
+                    <div>
+                        <label class="label">{{ t('common.phone') }}</label>
+                        <input v-model="createForm.phone" class="input" />
+                    </div>
+                </div>
+                <div>
+                    <label class="label">{{ t('common.email') }}</label>
+                    <input v-model="createForm.email" type="email" class="input" />
+                    <p v-if="createErrors.email" class="mt-1 text-xs text-red-500">{{ createErrors.email[0] }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">{{ t('admin.owner_password') }}</label>
+                        <input v-model="createForm.password" type="password" class="input" />
+                    </div>
+                    <div>
+                        <label class="label">{{ t('auth.confirm_password') }}</label>
+                        <input v-model="createForm.password_confirmation" type="password" class="input" />
+                    </div>
+                </div>
+                <div>
+                    <label class="label">{{ t('admin.plan') }}</label>
+                    <select v-model="createForm.subscription_plan_id" class="input">
+                        <option v-for="p in plans" :key="p.id" :value="p.id">{{ p.name }} (৳{{ p.price }})</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">{{ t('admin.start_mode') }}</label>
+                    <select v-model="createForm.start_mode" class="input">
+                        <option value="trial">{{ t('admin.start_trial') }} ({{ defaultTrialDays }} {{ t('admin.trial_days').toLowerCase() }})</option>
+                        <option value="active">{{ t('admin.start_active') }}</option>
+                    </select>
+                </div>
+                <div v-if="createForm.start_mode === 'trial'">
+                    <label class="label">{{ t('admin.custom_trial_days') }}</label>
+                    <input v-model="createForm.trial_days" type="number" min="1" max="365" class="input" :placeholder="String(defaultTrialDays)" />
+                    <p class="mt-1 text-xs text-slate-500">{{ t('admin.custom_trial_hint') }}</p>
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn-secondary" @click="createModal = false">{{ t('common.cancel') }}</button>
+                <button class="btn-primary px-6" :disabled="creating" @click="createStore">{{ t('common.create') }}</button>
+            </template>
+        </BaseModal>
 
         <!-- Capabilities modal -->
         <BaseModal :show="capModal" :title="`${t('admin.capabilities_for')} ${capStore?.name || ''}`" @close="capModal = false">

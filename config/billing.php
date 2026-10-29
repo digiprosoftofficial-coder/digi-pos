@@ -14,4 +14,14 @@ return [
 
     'sandbox_checkout_enabled' => (bool) env('BILLING_SANDBOX_CHECKOUT', env('APP_ENV') !== 'production'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Self-serve registration trial length
+    |--------------------------------------------------------------------------
+    |
+    | Used until a super admin saves a value in platform settings.
+    |
+    */
+    'trial_days' => (int) env('STORE_TRIAL_DAYS', 7),
+
 ];

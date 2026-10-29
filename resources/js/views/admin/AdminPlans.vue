@@ -12,6 +12,8 @@ const ui = useUiStore();
 const plans = ref([]);
 const allCaps = ref([]);
 const loading = ref(true);
+const trialDays = ref(7);
+const savingTrial = ref(false);
 const showForm = ref(false);
 const editing = ref(null);
 
@@ -30,9 +32,14 @@ const form = ref(blank());
 async function load() {
     loading.value = true;
     try {
-        const [p, c] = await Promise.all([api.get('/admin/plans'), api.get('/admin/plans/capabilities')]);
+        const [p, c, s] = await Promise.all([
+            api.get('/admin/plans'),
+            api.get('/admin/plans/capabilities'),
+            api.get('/admin/settings'),
+        ]);
         plans.value = p.data.data;
         allCaps.value = c.data.data;
+        trialDays.value = s.data.data.trial_days;
     } finally {
         loading.value = false;
     }
@@ -70,6 +77,19 @@ async function remove(p) {
     load();
 }
 
+async function saveTrialDays() {
+    savingTrial.value = true;
+    try {
+        const { data } = await api.put('/admin/settings', { trial_days: Number(trialDays.value) });
+        trialDays.value = data.data.trial_days;
+        ui.success(t('common.save'));
+    } catch (e) {
+        ui.error(e.response?.data?.message || 'Failed');
+    } finally {
+        savingTrial.value = false;
+    }
+}
+
 onMounted(load);
 </script>
 
@@ -78,6 +98,15 @@ onMounted(load);
         <div class="mb-4 flex items-center justify-between">
             <h1 class="text-2xl font-bold">{{ t('admin.plans') }}</h1>
             <button class="btn-primary" @click="create">+ {{ t('admin.new_plan') }}</button>
+        </div>
+
+        <div class="card mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="max-w-lg">
+                <label class="label">{{ t('admin.trial_days') }}</label>
+                <p class="mb-2 text-sm text-slate-500">{{ t('admin.trial_days_hint') }}</p>
+                <input v-model.number="trialDays" type="number" min="1" max="365" class="input max-w-32" />
+            </div>
+            <button class="btn-primary" :disabled="savingTrial" @click="saveTrialDays">{{ t('common.save') }}</button>
         </div>
 
         <Spinner v-if="loading" />

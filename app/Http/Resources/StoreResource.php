@@ -24,6 +24,7 @@ class StoreResource extends JsonResource
             'receipt_header' => $this->receipt_header,
             'receipt_footer' => $this->receipt_footer,
             'status' => $this->status,
+            'trial_ends_at' => $this->trial_ends_at,
             'loyalty' => $this->settings['loyalty'] ?? [
                 'enabled' => false,
                 'earn_per_unit' => 0,

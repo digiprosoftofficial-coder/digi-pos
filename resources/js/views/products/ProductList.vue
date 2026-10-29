@@ -9,10 +9,12 @@ import EmptyState from '@/components/ui/EmptyState.vue';
 import ProductForm from '@/views/products/ProductForm.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { variantSellingPrice } from '@/lib/productPricing';
+import { useOfflineStore } from '@/stores/offline';
 
 const { t } = useI18n();
 const auth = useAuthStore();
 const ui = useUiStore();
+const offline = useOfflineStore();
 const currency = computed(() => auth.currency);
 
 const products = ref([]);
@@ -54,9 +56,10 @@ async function remove(p) {
     ui.success(t('common.delete'));
     load();
 }
-function onSaved() {
+async function onSaved() {
     showForm.value = false;
-    load();
+    await load();
+    offline.syncCatalog().catch(() => {});
 }
 
 async function openAdjust(p) {

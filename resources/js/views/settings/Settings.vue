@@ -92,6 +92,9 @@ async function checkoutPlan(planId, gateway) {
         <h1 class="mb-4 text-2xl font-bold">{{ t('settings.title') }}</h1>
         <Spinner v-if="loading" />
         <div v-else class="space-y-4">
+            <div v-if="auth.isStoreExpired" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100">
+                {{ t('settings.trial_expired_hint') }}
+            </div>
             <div class="card space-y-3">
                 <div><label class="label">{{ t('auth.store_name') }}</label><input v-model="form.name" class="input" /></div>
                 <div class="grid grid-cols-2 gap-3">
